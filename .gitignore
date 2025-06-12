@@ -46,7 +46,7 @@ runs
 
 .cache
 wandb
-
+venv
 *.lock.hcl
 
 minio-data
@@ -55,5 +55,7 @@ mydata
 
 *.pt
 setuniversity-mlops-s25
-#/dataset
+dataset
 kaggle-dataset
+
+planesnet.json

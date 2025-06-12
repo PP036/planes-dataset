@@ -1,8 +1,11 @@
-wandb
 ultralytics
-python-dotenv
+wandb
 torch
 torchvision
+opencv-python
+Pillow
+numpy
+matplotlib
 pyyaml
+python-dotenv
 ray[default]
-tensorboard

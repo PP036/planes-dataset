@@ -1,144 +1,243 @@
-# Управління даними
+# Aircraft Detection System for Satellite Imagery
 
-## Локальний запуск Label Studio
+## 1. Project Overview
+This project is a system for detecting aircraft in satellite imagery using computer vision and deep learning. It includes the complete data workflow: from dataset management to model training on a distributed cluster and monitoring results.
 
+## 2. Repository Structure
+- **`kaggle_data/`** - Original dataset from Kaggle platform
+- **`dataset/`** - Prepared dataset for model training
+    - `train/` - Training data (80%)
+    - `test/` - Testing data (20%)
+    - `data.yaml` - YOLO configuration file
+- **`k8s/`** - Kubernetes configuration files
+- **`docker/`** - Docker-related resources
+- **`yolo-cpu/`** - YOLO scripts for CPU-based inference
+
+## 3. Local Environment Setup
+
+### 3.1 Label Studio Setup
 ```bash
+# Launch Label Studio and MinIO containers
 docker compose up -d
 ```
 
-### Налаштування MinIO
+### 3.2 MinIO Configuration
+- **URL:** http://localhost:9009/
+- **Credentials:** minioadmin / minioadmin
+- **Required Buckets:**
+    - `planes-dataset` - Source images
+    - `planes-labeled-dataset` - Labeled data from Label Studio
+    - `planes-dvc-storage` - DVC data versioning storage
 
-**MINIO:** http://localhost:9009/
-- **Логін:** minioadmin
-- **Пароль:** minioadmin
+### 3.3 Label Studio Configuration
+- **URL:** http://localhost:8080/
+- **Setup Steps:**
+    1. Register an account
+    2. Create a project (Object Detection with Bounding Boxes)
+    3. Configure cloud storage:
+        - URL: http://minio:9000
+        - Enable "Treat every bucket object as a source file"
+        - Disable pre-signed URLs
+    4. Upload images and perform annotations
 
-Бакети:
-- `planes-dataset` - для зберігання вихідних даних (зображення)
-- `planes-labeled-dataset` - для зберігання розмічених даних від Label Studio
-- `planes-dvc-storage` - для зберігання версіонованих даних через DVC
+## 4. Data Management Workflow
 
-### Налаштування Label Studio
-
-**Label Studio:** http://localhost:8080/
-
-1. Реєструємо акаунт
-2. Створюємо проєкт
-   - Обираємо тип: Object Detection with Bounding Boxes
-
-3. Налаштовуємо проєкт
-   - Обираємо Cloud Storage
-   - Налаштовуємо Source Cloud Storage та Target Cloud Storage:
-     - URL: http://minio:9000
-     - Опція "Treat every bucket object as a source file" - щоб кожен файл був завданням
-     - Вимикаємо pre-signed URLs - для проксювання зображень на фронт
-
-4. Завантажуємо зображення
-5. Виконуємо демо розмітки
-6. Показуємо приклад для розмітки питання-відповідь
-
-
-## Версіювання даних
-
-Наш репозиторій для датасету:
-https://github.com/PP036/planes-dataset
-
-### Встановлення та налаштування DVC
-
+### 4.1 Data Annotation
+1. Annotate images in Label Studio
+2. Export to YOLO format using the utility script:
 ```bash
-# Встановлюємо DVC
+./export_yolo.sh
+```
+
+### 4.2 Data Versioning with DVC
+Our dataset repository: https://github.com/PP036/planes-dataset
+
+#### Initial Setup
+```bash
+# Install DVC and initialize repository
 pip install 'dvc[all]'
-
-# Ініціалізуємо DVC в проєкті
 dvc init
-
-# Створюємо директорію для даних
 mkdir -p dataset
 
-# Налаштовуємо віддалене сховище в MinIO
+# Configure MinIO as remote storage
 dvc remote add -d storage s3://cars-dvc-storage
 dvc remote modify storage endpointurl http://localhost:9000
 
-# Використовуємо змінні середовища для облікових даних
+# Set MinIO credentials
 export MINIO_ACCESS_KEY="minioadmin"
 export MINIO_SECRET_KEY="minioadmin"
 dvc remote modify storage --local access_key_id ${MINIO_ACCESS_KEY}
 dvc remote modify storage --local secret_access_key ${MINIO_SECRET_KEY}
 
-# Фіксуємо початкову конфігурацію DVC в Git
+# Initial commit
 git add .dvc .gitignore
-git commit -m "Ініціалізація DVC та налаштування сховища"
+git commit -m "Initialize DVC and configure storage"
 ```
 
-### Робота з версіями даних
-
+#### Version Management Commands
 ```bash
-# Додаємо дані в DVC
+# Track data changes
 dvc add dataset
-
-# Перевіряємо створені файли
-cat dataset.dvc
-cat .gitignore
-
-# Додаємо файли в Git та робимо коміт
 git add dataset.dvc .gitignore
-git commit -m "v1"
-
-# Відправляємо дані у віддалене сховище
+git commit -m "Data version X"
 dvc push
+
+# Check data status and differences
 dvc status
-```
-
-### Оновлення даних
-
-```bash
-# Робимо ще розмітку та експортуємо нові дані до репозиторія
-
-# Перевіряємо статус
-dvc status
-
-# Дивимось що саме змінилось
 dvc diff
 
-# Додаємо оновлені дані в DVC
-dvc add dataset
-
-# Додаємо файли в Git
-git add dataset.dvc
-
-# Фіксуємо зміни
-git commit -m "v2"
-
-# Відправляємо дані у віддалене сховище
-dvc push
-dvc status
-```
-
-### Відновлення попередніх версій
-
-```bash
-# Відновлюємо попередню версію даних
-git log --oneline
-git checkout ae49f72
+# Restore previous versions
+git checkout <commit-hash>
 dvc checkout
 
-# Повертаємось до основної гілки
-git checkout main
-dvc checkout
-```
-
-### Клонування та відновлення даних
-
-```bash
-# Видаляємо репозиторій
-# Клонуємо репозиторій
-# Відновлюємо налаштування
-
-# Використовуємо змінні середовища для облікових даних
+# Retrieve data in a fresh clone
 export MINIO_ACCESS_KEY="minioadmin"
 export MINIO_SECRET_KEY="minioadmin"
 dvc remote modify storage --local access_key_id ${MINIO_ACCESS_KEY}
 dvc remote modify storage --local secret_access_key ${MINIO_SECRET_KEY}
-
-# Отримання даних з віддаленого сховища
 dvc pull
+```
+
+## 5. Distributed Training
+
+### 5.1 Ray Cluster Setup
+```bash
+# Start head node
+ray start --head --port=6379 --dashboard-host=0.0.0.0
+
+# Connect worker nodes (run on each worker)
+ray start --address='<head-node-IP-address>:6379'
+```
+- Ray Dashboard: http://localhost:8265
+
+### 5.2 Dataset Distribution
+```bash
+# Prepare dataset archive
+tar -czvf dataset.tar.gz dataset/
+
+# Copy to all nodes and extract
+for NODE in node1 node2 node3; do
+    scp dataset.tar.gz user@${NODE}:/path/to/working/directory/
+    ssh user@${NODE} "cd /path/to/working/directory/ && tar -xzvf dataset.tar.gz"
+done
+```
+
+### 5.3 Model Training
+```bash
+# Start distributed training
+python train_yolo.py --data dataset/data.yaml --epochs 100 --batch-size 16 --distributed
+```
+
+### 5.4 Training Monitoring with W&B
+```bash
+# Setup W&B
+pip install wandb
+wandb login
+```
+- Dashboard access: https://wandb.ai/username/planes-detection
+- Tracked metrics: loss, precision, recall, mAP
+- Visualizations: prediction results, experiment configuration, model artifacts
+
+# Setting up a Local Kubernetes Cluster
+
+## Command Line Tools Installation
+```shell script
+# Install kubectl
+brew install kubectl
+
+# Install kind for local Kubernetes cluster
+brew install kind
+
+# Install kustomize for YAML configuration management
+brew install kustomize
+
+# Install helm for Kubernetes package management
+brew install helm
+```
+
+## Docker Desktop Installation
+Install Docker Desktop with at least 8GB of allocated memory.
+
+## Recommended Tools
+For convenient cluster interaction, you can install a visual tool: https://k8slens.dev/
+
+## Deploying Local K8s and Ray Cluster
+
+### Preparation
+The week-3/k8s/ directory already contains all necessary configuration files:
+- kind/kind-config.yaml - local Kubernetes cluster configuration
+- ray-cluster-values.yaml - Ray cluster parameters for Helm
+- setup_cluster.sh - automatic deployment script
+
+### Cluster Deployment
+```shell script
+# Navigate to the configuration directory
+cd k8s/
+
+# Make the script executable
+chmod +x setup_cluster.sh
+
+# Run automatic deployment
+./setup_cluster.sh
+```
+
+The script will:
+- Create a Kind cluster
+- Install KubeRay operator via Helm
+- Deploy Ray cluster with configured parameters
+- Set up port-forwarding for service access
+
+### Verifying Cluster Operation
+```shell script
+# Check pod status
+kubectl get pods
+
+# Check Ray cluster status
+kubectl exec $(kubectl get pod -l ray.io/node-type=head -o jsonpath='{.items[0].metadata.name}') -- ray status
+
+# Open Ray Dashboard in browser
+http://localhost:8265
+```
+
+### Available Services
+After successful deployment, the following will be available:
+- Ray Dashboard: http://localhost:8265 - web interface for cluster monitoring
+- Ray Client: ray://localhost:10001 - endpoint for Python client connection
+- Ray Serve: http://localhost:8000 - endpoint for model deployment
+
+### Running a Test Task
+```shell script
+# Via Ray Jobs API
+ray job submit --address http://localhost:8265 -- python -c "import ray; ray.init(); print(ray.cluster_resources())"
+
+# Or via Python client
+python -c "
+import ray
+ray.init('ray://localhost:10001')
+print('Ray cluster resources:', ray.cluster_resources())
+ray.shutdown()
+"
+```
+
+### Training a Model on KubeRay Using CPU
+```shell script
+cd yolo-cpu
+python submit_job.py
+```
+
+### Cluster Management
+```shell script
+# Stop port forwarding
+pkill -f 'kubectl port-forward.*raycluster-kuberay-head-svc'
+
+# Delete Ray cluster
+helm uninstall raycluster
+helm uninstall kuberay-operator
+
+# Completely delete Kind cluster
+kind delete cluster --name ray-cluster
+
+# Restart cluster from scratch
+kind delete cluster --name ray-cluster
+./setup_cluster.sh
 ```

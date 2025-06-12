@@ -1,0 +1,79 @@
+# Конфігурація образу
+image:
+  repository: godpavel/ray-worker
+  tag: "2.46.0-py310"
+  pullPolicy: IfNotPresent
+
+# Конфігурація головного вузла
+head:
+  # Увімкнути автомасштабування
+  enableInTreeAutoscaling: true
+  autoscalerOptions:
+    upscalingMode: Default
+    idleTimeoutSeconds: 60
+
+  # Параметри запуску Ray
+  rayStartParams:
+    num-cpus: "0"
+    dashboard-host: "0.0.0.0"
+    metrics-export-port: "8080"
+
+  # Змінні середовища для інтеграції з Grafana
+  containerEnv:
+  - name: RAY_GRAFANA_IFRAME_HOST
+    value: "http://127.0.0.1:3000"
+  - name: RAY_GRAFANA_HOST
+    value: "http://prometheus-grafana.prometheus-system.svc:80"
+  - name: RAY_PROMETHEUS_HOST
+    value: "http://prometheus-kube-prometheus-prometheus.prometheus-system.svc:9090"
+  - name: RAY_PROMETHEUS_NAME
+    value: "Prometheus"
+
+  # Ресурси головного вузла
+  resources:
+    limits:
+      cpu: "1"
+      memory: "6Gi"
+    requests:
+      cpu: "0.5"
+      memory: "6Gi"
+
+  # https://kubernetes.io/docs/concepts/scheduling-eviction/assign-pod-node/
+  # Дозволяємо scheduling kuberay подів на master / control-plane
+  tolerations:
+    - key: "node-role.kubernetes.io/control-plane"
+      operator: "Exists"
+      effect: "NoSchedule"
+
+  nodeSelector:
+    node-role.kubernetes.io/control-plane: ""
+
+# Конфігурація робочого вузла - масштабування до нуля
+worker:
+  replicas: 0
+  minReplicas: 0
+  maxReplicas: 10
+
+  # Параметри Ray для робочих вузлів
+  rayStartParams:
+    metrics-export-port: "8080"
+
+  # Змінні середовища для робочих вузлів
+  containerEnv:
+  - name: RAY_GRAFANA_IFRAME_HOST
+    value: "http://127.0.0.1:3000"
+  - name: RAY_GRAFANA_HOST
+    value: "http://prometheus-grafana.prometheus-system.svc:80"
+  - name: RAY_PROMETHEUS_HOST
+    value: "http://prometheus-kube-prometheus-prometheus.prometheus-system.svc:9090"
+  - name: RAY_PROMETHEUS_NAME
+    value: "Prometheus"
+
+  # Ресурси робочого вузла
+  resources:
+    limits:
+      cpu: "2"
+      memory: "8Gi"
+    requests:
+      cpu: "1"
+      memory: "8Gi"

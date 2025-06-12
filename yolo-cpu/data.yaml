@@ -1,12 +1,7 @@
-# Корень датасета (относительно местоположения data.yaml)
 path: ../dataset
+train: images/train
+val:   images/val
 
-# Папки с изображениями и аннотациями
-train: images/train   # ../dataset/images/train
-val:   images/val     # ../dataset/images/val
-# test: images/test   # (можно добавить, если будет тестовый набор)
-
-# Классы
-nc: 1                  # у нас только один класс
+nc: 1
 names:
   0: airplane         # индекс 0 → 'airplane'
