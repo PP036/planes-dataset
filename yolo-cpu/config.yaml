@@ -21,4 +21,3 @@ run_name: "yolo-ray-training"
 
 # Збереження моделі
 save: true
-save_period: 5

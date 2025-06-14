@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-Скрипт тренування YOLOv8n з інтеграцією Weights & Biases
-Тренує модель YOLOv8n на CPU з повним відстеженням W&B та збереженням моделі
-Використовує вбудовану інтеграцію YOLO W&B
+Скрипт тренування YOLOv8n з інтеграцією Weights & Biases.
+Тренує модель YOLOv8n на CPU з повним відстеженням W&B та збереженням моделі як артефакта.
 """
 
 import os
@@ -15,9 +14,12 @@ import torch
 
 
 def load_config(config_path="config.yaml"):
-    """Завантажує конфігурацію з YAML файлу"""
+    print(f"📂 Завантаження конфігурації з {config_path}")
+    if not os.path.exists(config_path):
+        print("❌ config.yaml не знайдено!")
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
+    print(f"✅ Конфігурація завантажена: {config}")
     return config
 
 
@@ -29,8 +31,7 @@ def setup_wandb_environment():
     # Отримуємо API ключ W&B з середовища
     wandb_api_key = os.getenv('WANDB_API_KEY')
     if not wandb_api_key:
-        print("Warning: WANDB_API_KEY not found in environment variables")
-        print("Please set your W&B API key in .env file")
+        print("⚠️ WANDB_API_KEY not found in environment variables")
         return False
 
     # Входимо в W&B
@@ -75,21 +76,40 @@ def train_model(config):
         'momentum': config['momentum'],
         'weight_decay': config['weight_decay'],
         'save': config['save'],
-        'save_period': config['save_period'],
-        'project': config['wandb_project'],  # Назва проєкту W&B
-        'name': run_name,  # Назва запуску W&B (динамічна)
+        'project': config['wandb_project'],
+        'name': run_name,
         'plots': True,
         'verbose': True
     }
 
+    if 'save_period' in config:
+        train_args['save_period'] = config['save_period']
+
     print(f"🔧 Training parameters: {train_args}")
-
-    # Починаємо тренування - YOLO автоматично логуватиме в W&B
-    results = model.train(**train_args)
-
+    model.train(**train_args)
     print("✅ Training completed with built-in W&B logging!")
 
-    return model, results
+    # Зберігаємо модель у W&B Model Registry
+    save_dir = model.trainer.save_dir
+    print(f"🧪 save_dir = {save_dir}")
+    print(list(Path(save_dir).glob("**/*")))
+
+    model_dir = Path(save_dir) / "weights"
+    model_file = model_dir / "best.pt"
+
+    if model_file.exists():
+        print("📦 Ініціалізуємо новий W&B run для логування артефакта...")
+        run = wandb.init(project=config['wandb_project'], name=run_name + "-artifact", job_type="upload-model")
+
+        artifact = wandb.Artifact(name="yolo-model", type="model")
+        artifact.add_file(str(model_file))
+        run.log_artifact(artifact)
+        run.finish()
+        print(f"📦 Модель збережено в артефакт: {model_file}")
+    else:
+        print(f"⚠️ Файл не знайдено: {model_file}, артефакт не буде завантажено")
+
+    return model
 
 
 def main():
@@ -113,15 +133,14 @@ def main():
         if not setup_wandb_environment():
             print("⚠️  Continuing without W&B logging")
 
-        # Тренуємо модель з вбудованою інтеграцією W&B
-        model, results = train_model(config)
+        model = train_model(config)
 
         # Отримуємо кінцеву назву запуску (може бути перевизначена середовищем)
         final_run_name = os.getenv('WANDB_RUN_NAME', config['run_name'])
 
         print("✅ Training completed successfully!")
         print(f"📁 Results saved in: {config['wandb_project']}/{final_run_name}/")
-        print(f"🌐 Check your W&B dashboard at: https://wandb.ai")
+        print("🌐 Check your W&B dashboard at: https://wandb.ai")
 
     except Exception as e:
         print(f"❌ Error during training: {str(e)}")

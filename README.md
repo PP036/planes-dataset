@@ -241,3 +241,28 @@ kind delete cluster --name ray-cluster
 kind delete cluster --name ray-cluster
 ./setup_cluster.sh
 ```
+
+## 6. Сервінг моделей у Ray
+### 6.1 Документація
+- **Офіційна документація:** [https://docs.ray.io/en/latest/serve/configure-serve-deployment.html](https://docs.ray.io/en/latest/serve/configure-serve-deployment.html)
+
+### 6.2 Локальне тестування
+``` bash
+# Запуск сервінгу моделі локально
+serve run object_detection:entrypoint
+```
+### 6.3 Деплой на кластер
+``` bash
+# Запуск сервінгу на кластері
+python run_serve.py
+
+# Перевірка перенаправлення портів
+ps aux | grep "kubectl port-forward"
+```
+### 6.4 Тестування API
+``` bash
+# Відправлення тестового запиту до API
+python test.py
+```
+
+
