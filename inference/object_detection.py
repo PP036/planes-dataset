@@ -44,9 +44,9 @@ class APIIngress:
 class ObjectDetection:
     def __init__(self):
         # Конфігурація wandb
-        self.wandb_project = os.getenv("WANDB_PROJECT", "model-registry")
-        self.wandb_entity = os.getenv("WANDB_ENTITY", "dmytro-spodarets")
-        self.model_artifact_name = os.getenv("WANDB_MODEL_ARTIFACT", "dmytro-spodarets/model-registry/YOLO-NEW:v1")
+        self.wandb_project = os.getenv("WANDB_PROJECT", "mlops")
+        self.wandb_entity = os.getenv("WANDB_ENTITY", "pankratov-set-university")
+        self.model_artifact_name = os.getenv("WANDB_MODEL_ARTIFACT", "pankratov-set-university/setuniversity-mlops-s25/yolo-model:latestcd ")
 
         print("🤖 Ініціалізація wandb та завантаження моделі YOLO...")
 
