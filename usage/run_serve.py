@@ -3,7 +3,6 @@ from ray import serve
 import os
 from dotenv import load_dotenv
 
-# Завантажуємо змінні середовища з файлу .env (якщо він існує)
 load_dotenv()
 
 # Ініціалізація Ray з середовищем виконання на рівні завдання
@@ -13,7 +12,7 @@ ray.init(
         "working_dir": ".",
         "pip": [
             "ultralytics",
-            "wandb", 
+            "wandb",
             "python-dotenv",
             "opencv-python-headless",
             "matplotlib",
@@ -24,10 +23,9 @@ ray.init(
         ],
         "env_vars": {
             "OPENCV_IO_ENABLE_OPENEXR": "0",
-            "OPENCV_IO_ENABLE_JASPER": "0", 
+            "OPENCV_IO_ENABLE_JASPER": "0",
             "QT_QPA_PLATFORM": "offscreen",
             "MPLBACKEND": "Agg",
-            # Передаємо wandb змінні середовища в Ray
             "WANDB_PROJECT": os.getenv("WANDB_PROJECT", "mlops"),
             "WANDB_ENTITY": os.getenv("WANDB_ENTITY", "pankratov-set-university"),
             "WANDB_MODEL_ARTIFACT": os.getenv("WANDB_MODEL_ARTIFACT", "pankratov-set-university/setuniversity-mlops-s25/yolo-model:latest"),
@@ -38,7 +36,6 @@ ray.init(
     }
 )
 
-# Імпорт застосунку після ініціалізації Ray
 from object_detection import entrypoint
 
 # Запуск застосунку serve

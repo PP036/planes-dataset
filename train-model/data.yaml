@@ -4,4 +4,4 @@ val:   images/val
 
 nc: 1
 names:
-  0: airplane         # индекс 0 → 'airplane'
+  0: airplane         # індекс 0 → 'airplane'

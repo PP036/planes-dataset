@@ -1,6 +1,6 @@
 import os
 
-folder_path = "dataset/yolo_export/labels"
+folder_path = "dataset/labels"
 
 for filename in os.listdir(folder_path):
     if filename.endswith(".txt") and "__" in filename:

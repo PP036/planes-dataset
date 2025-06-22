@@ -39,4 +39,4 @@ def move_files(file_list, split):
 move_files(train_files, "train")
 move_files(val_files, "val")
 
-print("✅ Dataset успешно разделён на train и val.")
+print("✅ Dataset split for train и val.")
