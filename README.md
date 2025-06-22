@@ -104,16 +104,43 @@
     
 # Використання моделі
 
-запустіть сервінг моделі
+## Запуск сервісу моделі
 
-cd usage
-python .\run_serve.py
+1. Перейдіть до директорії з кодом для використання моделі:
+   ```bash
+   cd usage
+   ```
 
-прокиньте локальні порти
-kubectl port-forward service/raycluster-kuberay-head-svc 8000:8000
+2. Запустіть скрипт сервінгу моделі:
+   ```bash
+   python run_serve.py
+   ```
 
-перевірте лінки 
-http://localhost:8000/docs
+3. Налаштуйте переадресацію портів для доступу до сервісу:
+   ```bash
+   kubectl port-forward service/raycluster-kuberay-head-svc 8000:8000
+   ```
 
-запустіть test.py
-python .\test.py
+## Перевірка роботи сервісу
+
+1. Відкрийте документацію API за адресою:
+   [http://localhost:8000/docs](http://localhost:8000/docs)
+
+## Тестування детекції об'єктів
+
+Використовуйте клієнтський скрипт для детекції об'єктів на зображеннях:
+
+### З локальних файлів:
+```bash
+python client.py images/test.jpg
+```
+
+### З зображень за URL:
+```bash
+python client.py https://img.flytrippers.com/wp-content/uploads/2024/01/11131250/How-to-see-what-type-of-aircraft-your-flight-operates.jpg
+```
+
+✅ **Модель готова до використання!**
+
+
+
