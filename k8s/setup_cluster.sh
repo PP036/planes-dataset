@@ -239,6 +239,27 @@ echo "Setting up Ray Client API port-forward..."
 kubectl port-forward pod/$HEAD_POD 10001:10001 &
 echo "Ray Client API доступний за адресою: ray://localhost:10001"
 
+echo "=== 12. Importing local dashboards from k8s/monitoring/grafana ==="
+
+# Даємо Grafana кілька секунд для повного запуску
+sleep 5
+
+for dashboard in monitoring/grafana/*.json; do
+    NAME=$(basename "$dashboard" .json)
+    echo "📊 Importing $NAME..."
+
+    jq -n \
+      --slurpfile dash "$dashboard" \
+      --arg msg "Imported from local file: $NAME.json" \
+      '{dashboard: $dash[0], overwrite: true, message: $msg}' > /tmp/dashboard_payload.json
+
+    RESPONSE=$(curl -s -X POST http://localhost:3000/api/dashboards/db \
+      -u "${GRAFANA_USER}:${GRAFANA_PASSWORD}" \
+      -H "Content-Type: application/json" \
+      --data-binary @/tmp/dashboard_payload.json)
+
+    echo "$NAME → $(echo "$RESPONSE" | jq -r '.status // .message // .error // "❌ Failed"')"
+done
 
 echo "=== 11. Setup complete! ==="
 echo "Ray Dashboard: http://localhost:8265"
