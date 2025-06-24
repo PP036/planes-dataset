@@ -7,6 +7,8 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 SERVER_URL = "http://localhost:8000"
+INPUT_DIR = "images/input"
+OUTPUT_DIR = "images/output"
 
 def is_url(string):
     try:
@@ -29,7 +31,7 @@ def detect_from_file(file_path):
     try:
         print(f"📤 POST: {SERVER_URL}/detect_file")
         with open(file_path, "rb") as f:
-            files = {'file': f}  # 👈 важное исправление: без MIME-типа
+            files = {'file': f}
             resp = requests.post(f"{SERVER_URL}/detect_file", files=files)
             resp.raise_for_status()
             return resp.json()
@@ -37,7 +39,7 @@ def detect_from_file(file_path):
         print(f"❌ POST помилка: {e}")
         return None
 
-def draw_boxes(image, detections, output_path="images/output/output.jpg"):
+def draw_boxes(image, detections, output_path):
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
     for det in detections:
@@ -55,10 +57,11 @@ def draw_boxes(image, detections, output_path="images/output/output.jpg"):
 
 def main():
     if len(sys.argv) != 2:
-        print("Використання: python client.py <image_url або локальний_шлях>")
+        print("Використання: python client.py <image_url або ім'я_файлу>")
         sys.exit(1)
 
     input_arg = sys.argv[1]
+    input_path = os.path.join(INPUT_DIR, input_arg)
     result = None
 
     if is_url(input_arg):
@@ -67,12 +70,24 @@ def main():
             resp = requests.get(input_arg)
             img_arr = np.asarray(bytearray(resp.content), dtype=np.uint8)
             image = cv2.imdecode(img_arr, cv2.IMREAD_COLOR)
-            draw_boxes(image, result["objects"])
-    elif os.path.isfile(input_arg):
-        result = detect_from_file(input_arg)
-        if result and result.get("objects"):
-            image = cv2.imread(input_arg)
-            draw_boxes(image, result["objects"])
+            output_path = os.path.join(OUTPUT_DIR, f"{Path(input_arg).stem}_output.jpg")
+            draw_boxes(image, result["objects"], output_path)
+    elif os.path.isfile(input_path):
+        result = detect_from_file(input_path)
+        if result:
+            print("✅ Отримано результат:", result)
+            if result.get("objects"):
+                image = cv2.imread(input_path)
+                if image is None:
+                    print(f"❌ Не вдалося зчитати зображення: {input_path}")
+                    sys.exit(1)
+                name_no_ext = Path(input_arg).stem
+                output_path = os.path.join(OUTPUT_DIR, f"{name_no_ext}_output.jpg")
+                draw_boxes(image, result["objects"], output_path)
+            else:
+                print("ℹ️ Об'єкти не знайдено на зображенні.")
+        else:
+            print("❌ Не вдалося отримати результат від сервера.")
     else:
         print("❌ Некоректний шлях або URL")
         sys.exit(1)

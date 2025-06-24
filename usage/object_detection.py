@@ -132,7 +132,7 @@ class ObjectDetection:
             wandb.finish()
 
     async def detect(self, image_input: str):
-        conf_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", 0.8))
+        conf_threshold = float(os.getenv("CONFIDENCE_THRESHOLD", 0.6))
 
         # YOLOv8: используем .predict с явным conf
         results = self.model.predict(image_input, conf=conf_threshold)
